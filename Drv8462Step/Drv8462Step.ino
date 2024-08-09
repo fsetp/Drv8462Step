@@ -10,25 +10,27 @@
 #define	EXBT_BLUE_PIN	26
 #endif
 
-#define	USE_CURVE
+//#define	USE_CURVE
 
-#define	DUTY_BITS		8
-#define	MAX_FREQ_PWM	160000.0
-#define	MIN_FREQ_PWM	10000.0
-#define	STEP_FREQ_PWM	10000.0
-#define	DUTY_PWM		128
+#define	DUTY_BITS		8			// 
+#define	MAX_FREQ_PWM	160000.0	// 
+#define	MIN_FREQ_PWM	0.0			// 
+#define	STEP_FREQ_PWM	2000.0		// 
+#define	DUTY_PWM		128			// 
 
-#define	PWM_CH			2	
-#define	PWM_PIN			2	
-#define	NSLEEP_PIN		5	
-#define	EN_PIN			16	
-#define	DIR_PIN			17	
+#define	PWM_CH			2			// 
+#define	PWM_PIN			2			// 
+#define	NSLEEP_PIN		5			// 
+#define	EN_PIN			16			// 
+#define	DIR_PIN			17			// 
 
-#define	CYCLE_WAIT_MS	5
-#define	EN_WAIT_MS		100
-#define	CONST_MS		400	// 400ms
+#define	CYCLE_WAIT_MS	1			//   2 ms
+#define	EN_WAIT_MS		100			// 100 ms
+#define	CONST_MS		800			// 400 ms
 #define	CONST_TIMES		(CONST_MS / CYCLE_WAIT_MS)
 #define	ACCEL_MS		((MAX_FREQ_PWM  - MIN_FREQ_PWM + STEP_FREQ_PWM) / STEP_FREQ_PWM * CYCLE_WAIT_MS)
+
+#define	ROUNDTRIP_TIMES	20
 
 double	g_nFreqPWM		= MIN_FREQ_PWM;		//
 int		g_nCycleWaitMs	= CYCLE_WAIT_MS;	//
@@ -171,12 +173,14 @@ void SetFrequency(double nFreq)
 
 ////////////////////////////////////////
 //
-bool SendPulseCurve(bool bDir, int chkbt)
+bool SendPulseCurve(bool bDir, int chkbt, bool bCtrlEn)
 {
 	SetDir(bDir);
 
-	SetEn(true);
-	delay(EN_WAIT_MS);
+	if (bCtrlEn) {
+		SetEn(true);
+		delay(EN_WAIT_MS);
+	}
 
 	int nAccNum = sizeof (g_AccTable) / sizeof (double);
 
@@ -246,20 +250,24 @@ bool SendPulseCurve(bool bDir, int chkbt)
 
 	SetFrequency(0);
 
-	delay(EN_WAIT_MS);
-	SetEn(false);
+	if (bCtrlEn) {
+		delay(EN_WAIT_MS);
+		SetEn(false);
+	}
 
 	return true;
 }
 
 ////////////////////////////////////////
 //
-bool SendPulseTrapezoid(bool bDir, int chkbt)
+bool SendPulseTrapezoid(bool bDir, int chkbt, bool bCtrlEn)
 {
 	SetDir(bDir);
 
-	SetEn(true);
-	delay(EN_WAIT_MS);
+	if (bCtrlEn) {
+		SetEn(true);
+		delay(EN_WAIT_MS);
+	}
 
 	unsigned long micro1;
 	unsigned long micro2;
@@ -329,8 +337,10 @@ bool SendPulseTrapezoid(bool bDir, int chkbt)
 
 	SetFrequency(0);
 
-	delay(EN_WAIT_MS);
-	SetEn(false);
+	if (bCtrlEn) {
+		delay(EN_WAIT_MS);
+		SetEn(false);
+	}
 
 	return true;
 }
@@ -386,20 +396,24 @@ void loop()
 
 	if (M5.BtnA.wasPressed()) {
 #ifdef	USE_CURVE
-		SendPulseCurve(false, CHK_BTA);
+		SendPulseCurve(false, CHK_BTA, true);
 #else
-		SendPulseTrapezoid(false, CHK_BTA);
+		SendPulseTrapezoid(false, CHK_BTA, true);
 #endif
 	}
 
 	if (M5.BtnB.wasPressed()) {
 		bool bCont = true;
-		for (int i = 0; i < 5; i++) {
+
+		SetEn(true);
+		delay(EN_WAIT_MS);
+
+		for (int i = 0; i < ROUNDTRIP_TIMES; i++) {
 #ifdef	USE_CURVE
-			if (!SendPulseCurve(false, CHK_BTB))
+			if (!SendPulseCurve(false, CHK_BTB, false))
 				break;
 #else
-			if (!SendPulseTrapezoid(false, CHK_BTB))
+			if (!SendPulseTrapezoid(false, CHK_BTB, false))
 				break;
 #endif
 
@@ -414,10 +428,10 @@ void loop()
 				break;
 
 #ifdef	USE_CURVE
-			if (!SendPulseCurve(true, CHK_BTB))
+			if (!SendPulseCurve(true, CHK_BTB, false))
 				break;
 #else
-			if (!SendPulseTrapezoid(true, CHK_BTB))
+			if (!SendPulseTrapezoid(true, CHK_BTB, false))
 				break;
 #endif
 			for (int j = 0; j < 5; j++) {
@@ -430,13 +444,16 @@ void loop()
 			if (bCont == false)
 				break;
 		}
+
+		delay(EN_WAIT_MS);
+		SetEn(false);
 	}
 
 	if (M5.BtnC.wasPressed()) {
 #ifdef	USE_CURVE
-		SendPulseCurve(true, CHK_BTC);
+		SendPulseCurve(true, CHK_BTC, true);
 #else
-		SendPulseTrapezoid(true, CHK_BTC);
+		SendPulseTrapezoid(true, CHK_BTC, true);
 #endif
 	}
 
