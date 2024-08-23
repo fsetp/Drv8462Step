@@ -15,7 +15,7 @@
 #define	DUTY_BITS		8			// 
 #define	MAX_FREQ_PWM	160000.0	// 
 #define	MIN_FREQ_PWM	0.0			// 
-#define	STEP_FREQ_PWM	2000.0		// 
+#define	STEP_FREQ_PWM	1880.0		// 
 #define	DUTY_PWM		128			// 
 
 #define	PWM_CH			2			// 
