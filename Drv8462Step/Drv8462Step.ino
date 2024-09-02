@@ -16,6 +16,8 @@
 #define	MAX_FREQ_PWM	160000.0	// 
 #define	MIN_FREQ_PWM	0.0			// 
 #define	STEP_FREQ_PWM	1880.0		// 
+//#define	STEP_FREQ_PWM	1000.0		// 
+
 #define	DUTY_PWM		128			// 
 
 #define	PWM_CH			2			// 
@@ -30,7 +32,7 @@
 #define	CONST_TIMES		(CONST_MS / CYCLE_WAIT_MS)
 #define	ACCEL_MS		((MAX_FREQ_PWM  - MIN_FREQ_PWM + STEP_FREQ_PWM) / STEP_FREQ_PWM * CYCLE_WAIT_MS)
 
-#define	ROUNDTRIP_TIMES	20
+#define	ROUNDTRIP_TIMES	100
 
 double	g_nFreqPWM		= MIN_FREQ_PWM;		//
 int		g_nCycleWaitMs	= CYCLE_WAIT_MS;	//
@@ -97,7 +99,7 @@ bool CheckExButton()
 
 ////////////////////////////////////////
 //
-void DisplayValue()
+void DisplayValue(int times = -1)
 {
 	M5.Lcd.setTextSize(3);
 	M5.Lcd.setCursor(10, 10);
@@ -112,8 +114,13 @@ void DisplayValue()
 	M5.Lcd.printf("Accel %6d ms", (int)ACCEL_MS);
 	M5.Lcd.setCursor(10, 160);
 	M5.Lcd.printf("Const %6d ms", (int)CONST_MS);
-	M5.Lcd.setCursor(10, 190);
-	M5.Lcd.printf("Cycle %6d ms", g_nCycleWaitMs);
+	if (times == -1) {
+		M5.Lcd.setCursor(10, 190);
+		M5.Lcd.printf("Cycle %6d ms", g_nCycleWaitMs);
+	} else {
+		M5.Lcd.setCursor(10, 190);
+		M5.Lcd.printf("Times %3d / %3d", times, ROUNDTRIP_TIMES);
+	}
 }
 
 ////////////////////////////////////////
@@ -409,6 +416,9 @@ void loop()
 		delay(EN_WAIT_MS);
 
 		for (int i = 0; i < ROUNDTRIP_TIMES; i++) {
+
+			DisplayValue(i);
+
 #ifdef	USE_CURVE
 			if (!SendPulseCurve(false, CHK_BTB, false))
 				break;
